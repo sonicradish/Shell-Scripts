@@ -6,3 +6,4 @@ This is a collection of Shell Scripts that I've Written and Find Useful (sometim
 
 3. fixMAMPsql - fix broken / incomplete MAMP / MAMP Pro installations where the mysql.sock is not properly linked
 
+4. syntax - script to check php and / or javascript files for errors (recursively) supports checking from git base directory as well as return true / false to be used in deployment scripts
