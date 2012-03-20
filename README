@@ -1,0 +1,3 @@
+This is a collection of Shell Scripts that I've Written and Find Useful (sometimes)
+
+1. redit - open a local file using a remote instance of vi/vim (or any editor on a remote machine)

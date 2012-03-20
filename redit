@@ -1,0 +1,113 @@
+#!/bin/bash
+#
+# redit - use an editor on a remote machine to edit a local file
+# author: jmcclure@sonicradish.com
+# date  : 2012-03-19
+# source: https://github.com/sonicradish/Shell-Scripts
+#
+# This script works best when keys are exchanged between machines to prevent password
+# prompts.  Also, the local machine (running this script) must accept incoming ssh
+
+## <-- Configuration
+# Build Version
+VERSION="1.0.20120319"
+# Remote User
+REMOTE_USER="${USER}"
+# Local User
+LOCAL_USER="${USER}"
+# Local Host
+LOCAL_HOST="${HOST}"
+# Remote Host  // Update this value with your remote host
+REMOTE_HOST="127.0.0.1"
+# Remote Editor
+REMOTE_EDIT="vi"
+# Local File
+LOCAL_FILE=""
+# Quiet Mode
+QUIET_MODE=0
+## --> Configuration
+
+# Usage Definitions
+usage()
+{
+	WHEN=(${VERSION//./ })	
+	VERS=${VERSION//\.${WHEN[2]}/ }
+cat << EOF
+`basename $0` Version: $VERS Built: ${WHEN[2]}
+
+usage:   `basename $0` options file
+
+This script will open a local file using a remote VIM instance.
+
+OPTIONS:
+   -u      Define the remote user (default: ${REMOTE_USER})
+   -h      Define the remote host (default: ${REMOTE_HOST})
+   -e      Define the remote editor (default: ${REMOTE_EDIT})
+   -f      Define the local file to edit
+   -q      Run in quiet mode, [0/1] (default: ${QUIET_MODE})
+
+EOF
+exit 1
+}
+
+# Handle Options
+while getopts ":h:u:f:e:q" optionName; do
+    case "$optionName" in
+		h) REMOTE_HOST="$OPTARG" ;;
+    u) REMOTE_USER="$OPTARG" ;;
+    f) LOCAL_FILE="$OPTARG"  ;;
+    e) REMOTE_EDIT="$OPTARG" ;;
+    q) QUIET_MODE=1 ;;
+    ?) usage ;;
+  esac
+done
+
+# Usage Definition
+if [ $# -lt 1 ] ; then
+		usage
+fi
+
+# Define File to Edit
+if [ "${LOCAL_FILE}" == "" ] ; then
+  eval LOCAL_FILE=\$$#
+	# Make Sure Not a Flag
+  if [ "${LOCAL_FILE:0:1}" == "-" ] ; then
+    usage
+  fi
+fi
+
+# Fix File Path
+if [ ! "${LOCAL_FILE:0:1}" == "/" ] ; then
+	LOCAL_FILE="${PWD}/${LOCAL_FILE}";
+fi
+
+# Update Host
+TEMP_HOST=$(wget -q -O - checkip.dyndns.org|sed -e 's/.*Current IP Address: //' -e 's/<.*$//')
+if [ "$TEMP_HOST" != "" ] ; then
+	LOCAL_HOST="${TEMP_HOST}"
+fi
+
+# Confirm Action
+if [ ! $QUIET_MODE -eq 1 ] ; then 
+	echo ""
+	echo "Remote: ${REMOTE_USER}@${REMOTE_HOST}"
+	echo "Local : ${LOCAL_USER}@${LOCAL_HOST}"
+	echo "Editor: ${REMOTE_EDIT}"
+	echo "Target: ${LOCAL_FILE}"
+	echo ""
+	read -n1 -p "Continue with these settings? [Y/n]" yorn
+
+	# Process Response
+	if [[ $yorn =~ [Nn] ]] ; then
+		echo "Cancelled."
+		exit 1
+	fi
+fi
+
+# Execute
+ssh -t $REMOTE_USER@$REMOTE_HOST "${REMOTE_EDIT} scp://${LOCAL_USER}@${LOCAL_HOST}/${LOCAL_FILE}"
+
+# Finished
+echo "Done."
+
+
