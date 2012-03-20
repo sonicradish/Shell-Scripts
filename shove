@@ -1,0 +1,45 @@
+#!/bin/bash
+#
+# shove
+# author: jmcclure@sonicradish.com
+# date  : 2011-11-15
+# source: https://github.com/sonicradish/Shell-Scripts
+# needed: ~/.ssh/config 
+# 
+# This script simplifies deploying a file to multiple servers that
+# are listed in the ssh-config file.  It also supports an additional
+# command which will be executed after each file is copied, which is
+# useful for moving files, changing permissions, executing, etc...
+
+if [ $# -lt 2 ] ; then
+	F=$(basename $0)
+	echo ""
+	echo "Usage: ${F} <local file> <remote path> [ssh command]"
+	echo " - local file  : file to copy to remote servers"
+	echo " - remote path : location to copy file on remote servers"
+	echo " - ssh command : [optional] ssh command to run after file is copied"
+	echo " eg: shove test.sh /tmp 'sudo cp /tmp/test.sh /new/folder' "
+	echo ""
+	echo "Note: this file requires that all applicable servers exist in your "
+	echo "      ~/.ssh/config file and have a host value definied."
+	echo ""
+	exit 2
+fi
+echo -n "Shoving ${1} to Remote Server:{$2} > [y/N] "
+read STARTIT
+if [ "$STARTIT" != "y" ] ; then
+	echo "Cancelled"
+	exit 2
+fi
+for i in `grep '^Host' ~/.ssh/config | grep -vi hostname | grep -v \* | awk '{print $2}'`
+do
+	echo -n "Copy Files to: ${i} > [y/N] "
+	read ANSWER
+	if [ "$ANSWER" = "y" ] ; then
+		scp ${1} ${i}:${2}
+		# Hidden Follow Up Command
+		if [ $# -eq 3 ] ; then
+			ssh -t ${i} "${3}"
+		fi
+	fi
+done

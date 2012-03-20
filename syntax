@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Simple Script to Check PHP/JS Syntax (Recursively)
+# 2012-02-10 - jmcclure@sonicradish.com
+# source: https://github.com/sonicradish/Shell-Scripts
+# Dependencies: php-cli, git-core, jslint
+
+# Defaults
+DAT='2012-02-20'
+VER='3.1'
+SWD=`pwd`
+SKIP=1
+COOL='No syntax errors detected'
+FAIL=0
+ROOT=0
+ALL=0
+ERR=0
+WRN=0
+EXT='php'
+
+# Usage Definitions
+usage()
+{
+cat << EOF
+`basename $0` Version: $VER Built: $DAT
+
+usage:   `basename $0` options
+
+This scripts checks PHP/JS syntax recursively.
+
+OPTIONS:
+   -h      Show this message
+   -g      Recursively check from root of current Git respository
+   -d      Specify a starting directory to use
+   -j      Check JavaScript instead of PHP (jslint)
+   -f      This will output a line reading FAIL on any errors
+   -v      Verbose
+
+EOF
+
+exit 1
+}
+
+# Handle Options
+while getopts ":hfgvjd:" optionName; do
+		case "$optionName" in
+		h) usage		;;
+		f) FAIL=1   ;;
+		j) EXT='js' ;; 
+		d) if [ -d "$OPTARG" ] ; then SWD="$OPTARG"; fi ;;
+		g) ROOT=1		;;
+		v) SKIP=0		;;
+		?) usage		;;
+	esac
+done
+
+# Check if In Git Repository (if requested)
+if [ "$ROOT" -eq 1 ] ; then
+	if git rev-parse --git-dir > /dev/null 2>&1; then
+		SWD=$(cd $SWD; git rev-parse --show-toplevel)
+	fi
+	if [ $FAIL -eq 0 ] ; then
+		echo "Running in Git Mode..."
+	fi
+fi
+
+if [ $FAIL -eq 0 ] ; then 
+	echo "Recursively checking ${EXT} syntax from: ${SWD}"
+fi
+
+# Syntax Check PHP Files
+for i in `find $SWD -name "*.${EXT}" -print 2>/dev/null` ; do 
+	TMP=0
+	ALL=$((ALL+1))
+	if [[ "${EXT}" == "php" ]] ; then
+		RSP=$(php -l $i)
+		if [[ ! "$RSP" =~ "$COOL" ]] ; then 
+			ERR=$((ERR+1))
+			TMP=1
+  	fi
+	else
+		RSP=$(jsl -process $i)
+		CNT=$(jsl -process $i| grep 'error(s),' | awk -F' ' '{print $1}')
+		WFL=$(jsl -process $i| grep 'error(s),' | awk -F' ' '{print $3}')
+		if [ $CNT -gt 0 ] ; then
+			ERR=$((ERR+1))
+			TMP=1
+		fi
+		if [ $WFL -gt 0 ] ; then
+			WRN=$((WRN+1))
+		fi
+	fi
+	if [ "$SKIP" -eq 1 ] ; then
+		if [[ $TMP -eq 1 ]] ; then
+			if [[ $FAIL -eq 0 ]] ; then
+				echo "$RSP";	
+			fi
+		fi
+	else
+		echo "$RSP"
+	fi
+done
+
+# In FAIL Mode Show FAIL or OKAY (useful for external scripts)
+if [ $FAIL -eq 1 ] ; then
+	if [ $ERR -gt 0 ] ; then
+		echo "FAIL"
+	else
+		echo "OKAY"
+	fi
+	exit 1
+fi
+
+RSLT="Checked ${ALL} ${EXT} File(s) and Found ${ERR} File(s) with Error(s)"
+if [ "$EXT" == 'js' ] ; then
+	RSLT="${RSLT} and ${WRN} File(s) with Warning(s)"
+fi
+echo $RSLT
