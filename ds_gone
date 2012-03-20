@@ -1,0 +1,20 @@
+#!/bin/bash
+# ds_gone
+# author: jmcclure@sonicradish.com
+# date  : 2011-11-11
+# https://github.com/sonicradish/Shell-Scripts
+#
+# This script recursively removes .DS_Store files
+
+echo "Recursively Removing .DS_Store Files..."
+echo "Path: "`pwd`
+CTR=0
+for i in `find . -name '.DS_Store' -type f -print 2>/dev/null`
+do
+	if [ -f "$i" ] ; then
+		let CTR=CTR+1
+		echo " -> Removing: ${i}" 
+		rm -f $i 2>/dev/null
+	fi
+done
+echo "Removed ${CTR} .DS_Store File(s)!"
