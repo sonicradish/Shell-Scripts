@@ -3,3 +3,6 @@ This is a collection of Shell Scripts that I've Written and Find Useful (sometim
 1. redit - open a local file using a remote instance of vi/vim (or any editor on a remote machine)
 
 2. ds_gone - recursively remove .DS_Store files from OS X
+
+3. fixMAMPsql - fix broken / incomplete MAMP / MAMP Pro installations where the mysql.sock is not properly linked
+

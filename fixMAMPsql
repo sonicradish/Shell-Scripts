@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# fixMAMPsql
+# author: jmcclure@sonicradish.com
+# date  : 2012-02-10
+# source: https://github.com/sonicradish/Shell-Scripts
+#
+# This script will fix broken/incomplete MAMP installations 
+# where the mysql sock is not linked correctly
+
+if [ ! -d /var/mysql ] ; then
+	echo "Creating /var/mysql directory..."
+	sudo mkdir /var/mysql
+fi
+
+if [ ! -L /var/mysql/mysql.sock ] && [ ! -f /var/mysql/mysql.sock ] ; then
+	if [ ! -f /Applications/MAMP/tmp/mysql/mysql.sock ] && [ ! -L /Applications/MAMP/tmp/mysql/mysql.sock ] ; then
+		echo "Is MAMP Running, I was not able to locate the mysql.sock file..."
+		exit 2
+	fi
+	echo "Linking MAMP mysql.sock to system mysql.sock..."
+	sudo ln -s /Applications/MAMP/tmp/mysql/mysql.sock /var/mysql/mysql.sock
+else 
+	echo "Looks like the link has already been created between MAMP and the system"
+	exit 0
+fi
+echo "\nThat should do it, MAMP MySQL connections should work now!\n"
+
